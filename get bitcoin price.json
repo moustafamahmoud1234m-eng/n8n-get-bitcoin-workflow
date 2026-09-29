@@ -1,0 +1,249 @@
+{
+  "name": "get bitcoin price",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -320,
+        0
+      ],
+      "id": "6471ac6b-50eb-463f-9193-f0db3724978f",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "url": "https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=bitcoin&names=Bitcoin&symbols=btc",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        -64,
+        -16
+      ],
+      "id": "1c620403-16f7-4b04-894d-db87e274cbdb",
+      "name": "HTTP Request",
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "waitBetweenTries": 3000,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "vrUrAFD4mb7MaxtL",
+          "name": "Header Auth account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "e1846cba-45b9-4f64-a546-e8376305aacc",
+              "leftValue": "={{ $json['Current Price']<70000 }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "73cc335d-2c3a-4a62-8c63-ba446a7b01f9",
+              "leftValue": "={{ $json['Current Price']>70000 }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        352,
+        -192
+      ],
+      "id": "e93f826b-d44b-491d-942a-b1f5df65581c",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst keyNames = {\n  id: \"Coin ID\",\n  symbol: \"Symbol\",\n  name: \"Coin Name\",\n  image: \"Coin Image\",\n\n  current_price: \"Current Price\",\n  market_cap: \"Total Market Value\",\n  market_cap_rank: \"Market Rank\",\n\n  fully_diluted_valuation: \"Maximum Possible Market Value\",\n\n  total_volume: \"Trading Amount Today\",\n\n  high_24h: \"Highest Price Today\",\n  low_24h: \"Lowest Price Today\",\n\n  price_change_24h: \"Price Change Today\",\n  price_change_percentage_24h: \"Price Change Today (%)\",\n\n  market_cap_change_24h: \"Change in Total Market Value\",\n  market_cap_change_percentage_24h: \"Change in Market Value (%)\",\n\n  circulating_supply: \"Coins Available Now\",\n  total_supply: \"Total Coins\",\n  max_supply: \"Maximum Number of Coins\",\n\n  ath: \"Highest Price Ever\",\n  ath_change_percentage: \"Distance From Highest Price (%)\",\n  ath_date: \"Date of Highest Price\",\n\n  atl: \"Lowest Price Ever\",\n  atl_change_percentage: \"Distance From Lowest Price (%)\",\n  atl_date: \"Date of Lowest Price\",\n\n  roi: \"Investment Return\",\n\n  last_updated: \"Last Updated\"\n};\n\n\n// Get input items from n8n\nconst items = $input.all();\n\n\n// Transform every item\nreturn items.map(item => {\n\n  const newData = {};\n\n  for (const [key, value] of Object.entries(item.json)) {\n\n    // Change key name\n    const newKey = keyNames[key] || key;\n\n    // Keep the original value\n    newData[newKey] = value;\n  }\n\n  return {\n    json: newData\n  };\n\n});\n\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        128,
+        -112
+      ],
+      "id": "1d3b7c51-477d-4607-9895-839fa73a398b",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "sendTo": "mezo.962004@gmail.com",
+        "subject": "error",
+        "emailType": "text",
+        "message": "={{ $json.details.message }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        176,
+        144
+      ],
+      "id": "068e34a9-a413-4494-8c9a-1d36afd93d6d",
+      "name": "if there an error",
+      "webhookId": "cf674230-4f35-4b64-93e4-201a96fe4ae5",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "YV6Fxra1O2lDLx8t",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "mezo.962004@gmail.com",
+        "subject": "buy",
+        "emailType": "text",
+        "message": "=the price is very low buy now at {{ $json[\"Current Price\"] }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        608,
+        -208
+      ],
+      "id": "19eeb821-f16a-4627-9b00-77816bf2f8c2",
+      "name": "buy message",
+      "webhookId": "814d6812-f72d-4851-b8de-5a1510c10d0f",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "YV6Fxra1O2lDLx8t",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "mezo.962004@gmail.com",
+        "subject": "sell now",
+        "emailType": "text",
+        "message": "=the price is very high sell now at{{ $json[\"Current Price\"] }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        608,
+        -32
+      ],
+      "id": "2917b2d0-c7ad-421b-b518-4a73dca64273",
+      "name": "sell message",
+      "webhookId": "d9e740f6-c67c-4dfc-8e75-6e43d25ef4ac",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "YV6Fxra1O2lDLx8t",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "if there an error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "buy message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "sell message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "07c85d8d-481a-4fa4-b8fc-7aac30475d4c",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1fba66b01f86217ee366a330d271cba59ca96acb3e058a8ba27b9a7e7d3fbed1"
+  },
+  "nodeGroups": [],
+  "id": "vAd9S9mpVbtBPc2M",
+  "tags": []
+}
